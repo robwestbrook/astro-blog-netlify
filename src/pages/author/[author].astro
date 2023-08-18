@@ -1,0 +1,56 @@
+---
+// util imports
+import { slugify, formatBlogPosts } from '../../scripts/utils'
+
+// Component Layouts
+import MainLayout from '../../layouts/MainLayout.astro'
+import PostCard from '../../components/PostCard.astro'
+
+// Astro provided function
+export async function getStaticPaths() {
+  // Get all Markdown posts
+  const allPosts = await Astro.glob('../blog/*.md')
+  // Format posts
+  const formattedPosts = formatBlogPosts(allPosts)
+  // Get all authors from all posts
+  const allAuthors = [
+    ...new Set(formattedPosts.map((post) => post.frontmatter.author).flat())
+  ]
+  // Map through all authors, get all posts for each author,
+  // and return the slugified author URL and all posts
+  return allAuthors.map((author) => {
+    const authorPosts = formattedPosts.filter(
+      (post) => post.frontmatter.author === author
+    )
+    return {
+      // URL params
+      params: { author: slugify(author) },
+      // Page props
+      props: {
+        authorName: author,
+        posts: authorPosts
+      }
+    }
+  })
+}
+
+const { author } = Astro.params
+const { authorName, posts } = Astro.props
+---
+
+<MainLayout title={authorName} description='The blog page'>
+  <section class='container' aria-label={`Posts by ${authorName}`}>
+    <h1 class='h2'>Posts by <span>{authorName}</span></h1>
+    <div class='post-container'>
+      {
+        posts.map((post) => (
+          <PostCard
+            frontmatter={post.frontmatter}
+            url={post.url}
+            tagType='h2'
+          />
+        ))
+      }
+    </div>
+  </section>
+</MainLayout>
